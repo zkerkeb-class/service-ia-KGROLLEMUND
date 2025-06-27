@@ -50,7 +50,7 @@ const analyzeDocumentWithAI = async (options) => {
       messages: [
         {
           role: "system",
-          content: "Tu es un expert en analyse de cahiers des charges. Tu vas analyser ce document pour en extraire les taches à réaliser et fournir une estimation initiale. Fournis le résultat au format JSON."
+          content: "Tu es un expert en analyse de projets professionnels multi-secteurs. Tu vas analyser ce document pour en extraire les principales étapes/prestations à réaliser et fournir une estimation adaptée au secteur d'activité. Fournis le résultat au format JSON."
         },
         {
           role: "user",
@@ -122,48 +122,91 @@ const buildDocumentAnalysisPrompt = (documentText, metadata) => {
   const yearsOfExperience = metadata?.yearsOfExperience || 'Non spécifiée';
   const projectTitle = metadata?.projectTitle || '';
   const projectDescription = metadata?.projectDescription || '';
+  const isSubscribed = metadata?.isSubscribed || false;
   
   const promptTemplate = `
-  Voici un document qui décrit un projet. 
+  Voici un document qui décrit un projet professionnel. 
   
   Informations du projet fournies par l'utilisateur:
   - Titre: ${projectTitle}
   - Description: ${projectDescription}
   
-  Analyse ce document et extrais les informations suivantes :
-  - La liste détaillée des tâches à réaliser
+  IMPORTANT: Analyse ce document et extrais les PRINCIPALES phases/livrables/prestations à réaliser.
+  - Regroupe les sous-tâches en GRANDES étapes logiques du projet
+  - Évite de découper en micro-tâches détaillées 
+  - Privilégie les regroupements par PHASE DE TRAVAIL ou LIVRABLE FINAL
+  - Limite-toi à maximum 10-12 grandes étapes principales
+  - Adapte-toi au secteur d'activité (construction, marketing, développement, conseil, design, etc.)
+  
+  Exemples de regroupement par secteur:
+  • Construction: "Étude de faisabilité et permis" (au lieu de "Dossier permis" + "Étude sol" + "Plans archi" séparés)
+  • Marketing: "Stratégie et création de contenu" (au lieu de "Audit" + "Brief créatif" + "Rédaction" séparés)  
+  • Développement: "Interface utilisateur complète" (au lieu de "HTML" + "CSS" + "JavaScript" séparés)
+  • Conseil: "Diagnostic et recommandations" (au lieu de "Audit" + "Analyse" + "Rapport" séparés)
   
   Métadonnées du profil professionnel (à prendre en compte pour l'estimation):
   - Secteur: ${sector}
   - Spécialités: ${JSON.stringify(specialties)}
   - Années d'expérience: ${yearsOfExperience}
 
-  Pour chaque tâche, détermine :
-  - Son nom
-  - Une courte description de la tâche(si présente)
-  - Estimation du coût en euros pour réaliser la tâche(basé sur un tarif horaire adapté au marché du secteur et du profil professionnel)
-  - Estimation du temps de réalisation de la tâche(basé sur le profil professionnel en particulier les spécialités et les années d'expérience)
+  ${isSubscribed ? 
+    `UTILISATEUR ABONNÉ - Fournis des estimations PRÉCISES :
+  Pour chaque GRANDE ÉTAPE, détermine :
+  - Son nom (phase ou livrable principal)
+  - Une description qui englobe tous les aspects de cette étape de travail
+  - Estimation PRÉCISE du coût en euros (basé sur les tarifs standards du secteur et le niveau d'expérience)
+  - Estimation PRÉCISE du temps de réalisation (basé sur les pratiques du secteur et l'expérience du professionnel)
+  
+  Exemple de valeurs précises : 25 heures, 1250€` : 
+    `UTILISATEUR NON ABONNÉ - Fournis des estimations en FOURCHETTES :
+  Pour chaque GRANDE ÉTAPE, détermine :
+  - Son nom (phase ou livrable principal)
+  - Une description qui englobe tous les aspects de cette étape de travail
+  - Estimation en FOURCHETTE du coût en euros (ex: "800-1200€" au lieu d'une valeur précise)
+  - Estimation en FOURCHETTE du temps de réalisation (ex: "15-25h" au lieu d'une valeur précise)
+  
+  Exemple de fourchettes : "20-30 heures", "1000-1500€"`}
   
   Document à analyser:
   ${documentText.substring(0, 15000)}
   
-  Retourne l'analyse sous forme de JSON avec cette structure:
+  ${isSubscribed ? 
+    `Retourne l'analyse sous forme de JSON avec cette structure (VALEURS PRÉCISES):
   {
     "title": "${projectTitle}",
     "description": "${projectDescription}",
-    "summary": "Résumé concis de l'analyse des tâches identifiées dans le document",
+    "summary": "Résumé concis des principales étapes/prestations identifiées dans le document",
+    "isSubscribed": true,
     "tasksBreakdown": [
       {
-        "task": "Nom de la tâche",
-        "description": "Description de la tâche",
-        "estimatedHours": 8,
-        "estimatedCost": 400
+        "task": "Nom de la grande étape/prestation",
+        "description": "Description complète incluant tous les aspects de cette phase de travail",
+        "estimatedHours": 25,
+        "estimatedCost": 1250
       },
       ...
     ],
-    "totalEstimatedHours": 40,
-    "totalEstimatedCost": 2000
-  }`;
+    "totalEstimatedHours": 120,
+    "totalEstimatedCost": 6000
+  }` :
+    `Retourne l'analyse sous forme de JSON avec cette structure (FOURCHETTES):
+  {
+    "title": "${projectTitle}",
+    "description": "${projectDescription}",
+    "summary": "Résumé concis des principales étapes/prestations identifiées dans le document",
+    "isSubscribed": false,
+    "tasksBreakdown": [
+      {
+        "task": "Nom de la grande étape/prestation",
+        "description": "Description complète incluant tous les aspects de cette phase de travail",
+        "estimatedHours": "20-30h",
+        "estimatedCost": "1000-1500€"
+      },
+      ...
+    ],
+    "totalEstimatedHours": "100-150h",
+    "totalEstimatedCost": "5000-7500€"
+  }`}`;
   
   return promptTemplate;
 };

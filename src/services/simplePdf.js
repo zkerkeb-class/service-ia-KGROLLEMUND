@@ -13,7 +13,7 @@ const generateSimplePDF = (quoteData, userData) => {
   content += `Titre: ${quoteData.title}\n`;
   content += `Description: ${quoteData.description}\n`;
   content += `Client: ${userData.name} (${userData.email})\n\n`;
-  content += `DÉTAIL DES ESTIMATIONS\n`;
+  content += `DÉTAIL DU DEVIS\n`;
   
   if (quoteData.estimates && quoteData.estimates.length > 0) {
     quoteData.estimates.forEach((estimate, index) => {

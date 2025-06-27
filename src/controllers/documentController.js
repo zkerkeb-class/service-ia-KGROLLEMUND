@@ -30,6 +30,7 @@ const analyzeDocument = async (req, res, next) => {
     const userId = req.body.userId; // ID de l'utilisateur pour sauvegarder l'analyse
     const projectTitle = req.body.projectTitle || "";
     const projectDescription = req.body.projectDescription || "";
+    const isSubscribed = req.body.isSubscribed === 'true'; // Statut d'abonnement
 
     try {
       // Analyser le document avec l'IA
@@ -43,6 +44,7 @@ const analyzeDocument = async (req, res, next) => {
           yearsOfExperience,
           projectTitle,
           projectDescription,
+          isSubscribed, // Inclure le statut d'abonnement
         },
       });
 

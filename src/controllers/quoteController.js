@@ -7,9 +7,18 @@ const generateQuote = async (req, res, next) => {
   console.log('Body:', req.body);
 
   try {
+    console.log('🎯 DONNÉES REÇUES DU FRONTEND:', {
+      clientEmail: req.body.clientEmail,
+      clientName: req.body.clientName,
+      updatedTasksCount: req.body.updatedTasks?.length || 0,
+      totalEstimate: req.body.totalEstimate,
+      timeEstimate: req.body.timeEstimate
+    });
+    
     const {
       quoteRequestId,
       clientEmail,
+      clientName,
       updatedTasks,
       totalEstimate,
       timeEstimate,
@@ -69,17 +78,51 @@ const generateQuote = async (req, res, next) => {
 
     // Utiliser les tâches mises à jour si fournies, sinon utiliser celles de la base de données
     const tasksToUse = updatedTasks || quoteRequestData?.tasksEstimation || [];
+    
+    // DEBUGGING: Logger les tâches pour diagnostiquer les doublons
+    console.log('🔍 DIAGNOSTIC TÂCHES:', {
+      updatedTasksCount: updatedTasks?.length || 0,
+      dbTasksCount: quoteRequestData?.tasksEstimation?.length || 0,
+      finalTasksCount: tasksToUse.length,
+      tasksPreview: tasksToUse.slice(0, 3).map(task => ({
+        task: task.task,
+        description: task.description?.substring(0, 50) + '...',
+        hours: task.estimatedHours,
+        cost: task.estimatedCost
+      }))
+    });
+    
+    // Nettoyer les doublons potentiels basés sur le nom de la tâche
+    const uniqueTasks = [];
+    const seenTasks = new Set();
+    
+    tasksToUse.forEach(task => {
+      const taskKey = task.task + '_' + task.description;
+      if (!seenTasks.has(taskKey)) {
+        seenTasks.add(taskKey);
+        uniqueTasks.push(task);
+      }
+    });
+    
+    console.log('🧹 NETTOYAGE:', {
+      avant: tasksToUse.length,
+      après: uniqueTasks.length,
+      doublon_supprimés: tasksToUse.length - uniqueTasks.length
+    });
+    
+    const finalTasks = uniqueTasks;
+    
     const totalEstimateToUse =
       totalEstimate ||
       quoteRequestData?.totalEstimate ||
-      tasksToUse.reduce(
+      finalTasks.reduce(
         (sum, task) => sum + Number(task.estimatedCost || 0),
         0
       );
     const timeEstimateToUse =
       timeEstimate ||
       quoteRequestData?.timeEstimate ||
-      tasksToUse.reduce(
+      finalTasks.reduce(
         (sum, task) => sum + Number(task.estimatedHours || 0),
         0
       );
@@ -93,8 +136,9 @@ const generateQuote = async (req, res, next) => {
         projectDescription ||
         "Description du projet",
       clientEmail: clientEmail || "",
+      clientName: clientName || "Client",
       createdAt: new Date().toISOString(),
-      estimates: tasksToUse.map((task) => ({
+      estimates: finalTasks.map((task) => ({
         featureName: task.task,
         explanation: task.description,
         estimatedHours: { min: task.estimatedHours, max: task.estimatedHours },
@@ -113,11 +157,12 @@ const generateQuote = async (req, res, next) => {
         const updateData = {
           status: "completed",
           clientEmail: clientEmail,
+          clientName: clientName,
         };
 
         // Si des tâches mises à jour sont fournies, les inclure dans la mise à jour
         if (updatedTasks) {
-          updateData.tasksEstimation = updatedTasks;
+          updateData.tasksEstimation = finalTasks;
           updateData.totalEstimate = totalEstimate;
           updateData.timeEstimate = timeEstimate;
         }
@@ -146,7 +191,8 @@ const generateQuote = async (req, res, next) => {
         const quoteCreationData = {
           quoteRequestId: quoteRequestId,
           clientEmail: clientEmail || "",
-          updatedTasks: tasksToUse,
+          clientName: clientName || "Client",
+          updatedTasks: finalTasks,
           totalEstimate: totalEstimateToUse,
           timeEstimate: timeEstimateToUse,
         };
@@ -155,6 +201,7 @@ const generateQuote = async (req, res, next) => {
           url: `${bddServiceUrl}/quotes`,
           quoteRequestId: quoteCreationData.quoteRequestId,
           clientEmail: quoteCreationData.clientEmail,
+          clientName: quoteCreationData.clientName,
           tasksCount: quoteCreationData.updatedTasks?.length,
           totalEstimate: quoteCreationData.totalEstimate,
           timeEstimate: quoteCreationData.timeEstimate

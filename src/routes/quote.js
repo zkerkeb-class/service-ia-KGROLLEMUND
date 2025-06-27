@@ -111,28 +111,30 @@ router.get('/quotes/pdf/:id', async (req, res) => {
     // Console log pour debug des données avant transformation
     console.log('🔍 Données brutes reçues de la BDD:', {
       title: quoteData.title,
-      tasksEstimation: quoteData.tasksEstimation
+      clientName: quoteData.clientName,
+      tasksEstimation: quoteData.tasksEstimation ? quoteData.tasksEstimation.slice(0, 2) : null,
+      totalEstimate: quoteData.totalEstimate,
+      timeEstimate: quoteData.timeEstimate
     });
     
     // Générer le PDF avec la bonne structure de données
     const pdfBuffer = await generateQuotePDF({
       title: quoteData.title,
       description: quoteData.description,
+      clientName: quoteData.clientName || 'Client',
       estimates: (quoteData.tasksEstimation || []).map(task => ({
         featureName: task.task || task.featureName || 'Tâche',
         explanation: task.description || `Tâche: ${task.task || 'Non spécifiée'}`,
         fixedPrice: task.cost || task.estimatedCost || task.fixedPrice || 0,
-        estimatedHours: { 
-          min: task.time || task.estimatedHours || 0, 
-          max: task.time || task.estimatedHours || 0 
-        }
+        estimatedHours: task.time || task.estimatedHours || 0
       })),
       totalPrice: quoteData.totalEstimate || 0,
       totalHours: quoteData.timeEstimate || 0,
       clientEmail: quoteData.clientEmail || 'client@example.com'
     }, {
       name: quoteData.user?.name || 'Développeur',
-      email: quoteData.user?.email || quoteData.clientEmail || ''
+      email: quoteData.user?.email || quoteData.clientEmail || '',
+      clientName: quoteData.clientName || 'Client'
     });
     
     // Détecter si c'est un PDF ou du HTML
