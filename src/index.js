@@ -6,6 +6,9 @@ const path = require('path');
 const fs = require('fs');
 const quoteRoutes = require('./routes/quote');
 const documentRoutes = require('./routes/document');
+// À ajouter dans le fichier principal (index.js) de chaque microservice
+const promBundle = require('express-prom-bundle');
+
 
 
 // Création de l'application Express
@@ -44,7 +47,22 @@ const logsDir = path.join(__dirname, '../logs');
 app.use('/api', quoteRoutes);
 app.use('/api', documentRoutes);
 
+// Middleware Prometheus pour collecter les métriques HTTP
+const metricsMiddleware = promBundle({
+  includeMethod: true,
+  includePath: true,
+  includeStatusCode: true,
+  includeUp: true,
+  customLabels: { project_name: 'ia-service' }, // Remplacer par le nom du service
+  promClient: { collectDefaultMetrics: {} }
+});
+app.use(metricsMiddleware);
 
+// Route pour exposer les métriques Prometheus
+app.get('/metrics', (req, res) => {
+  res.set('Content-Type', 'text/plain');
+  res.end(promBundle.promClient.register.metrics());
+});
 // Route par défaut
 app.get('/', (req, res) => {
   res.json({
