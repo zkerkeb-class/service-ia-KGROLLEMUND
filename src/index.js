@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -8,7 +7,8 @@ const quoteRoutes = require('./routes/quote');
 const documentRoutes = require('./routes/document');
 // À ajouter dans le fichier principal (index.js) de chaque microservice
 const promBundle = require('express-prom-bundle');
-
+const dotenv = require('dotenv');
+dotenv.config();
 
 
 // Création de l'application Express
@@ -25,8 +25,8 @@ app.use(morgan('dev'));
 
 // Middleware custom pour logger toutes les requêtes
 app.use((req, res, next) => {
-  console.log(`🌐 Service IA reçoit: ${req.method} ${req.url}`);
-  console.log('Headers:', req.headers);
+  // console.log(`🌐 Service IA reçoit: ${req.method} ${req.url}`);
+  // console.log('Headers:', req.headers);
   if (req.body && Object.keys(req.body).length > 0) {
     console.log('Body keys:', Object.keys(req.body));
   }

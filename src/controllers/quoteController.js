@@ -1,4 +1,6 @@
-const axios = require("axios");
+const dotenv = require('dotenv');
+const { bddAPI } = require('../services/databaseService'); // Importer l'instance bddAPI
+dotenv.config();
 
 const generateQuote = async (req, res, next) => {
   console.log('🎯 Service IA: Fonction generateQuote appelée !');
@@ -38,12 +40,10 @@ const generateQuote = async (req, res, next) => {
     // Si on a un quoteRequestId, récupérer les données depuis la base de données
     if (quoteRequestId) {
       try {
-        const bddServiceUrl =
-          process.env.BDD_SERVICE_URL || "http://localhost:3004";
-        console.log('📡 Récupération QuoteRequest depuis:', `${bddServiceUrl}/quote-requests/${quoteRequestId}`);
+        console.log('📡 Récupération QuoteRequest depuis bdd-service...');
         
-        const quoteRequestResponse = await axios.get(
-          `${bddServiceUrl}/quote-requests/${quoteRequestId}`
+        const quoteRequestResponse = await bddAPI.get(
+          `/quote-requests/${quoteRequestId}`
         );
         quoteRequestData = quoteRequestResponse.data;
 
@@ -152,8 +152,6 @@ const generateQuote = async (req, res, next) => {
     // Mettre à jour le statut et les informations client de la demande de devis (seulement si quoteRequestId existe)
     if (quoteRequestId && quoteRequestData) {
       try {
-        const bddServiceUrl =
-          process.env.BDD_SERVICE_URL || "http://localhost:3004";
         const updateData = {
           status: "completed",
           clientEmail: clientEmail,
@@ -167,8 +165,8 @@ const generateQuote = async (req, res, next) => {
           updateData.timeEstimate = timeEstimate;
         }
 
-        await axios.put(
-          `${bddServiceUrl}/quote-requests/${quoteRequestId}`,
+        await bddAPI.put(
+          `/quote-requests/${quoteRequestId}`,
           updateData
         );
         console.log("✅ QuoteRequest mis à jour");
@@ -186,8 +184,6 @@ const generateQuote = async (req, res, next) => {
     // Créer un devis final en base de données si on a un quoteRequestId
     if (quoteRequestId && quoteRequestData) {
       try {
-        const bddServiceUrl =
-          process.env.BDD_SERVICE_URL || "http://localhost:3004";
         const quoteCreationData = {
           quoteRequestId: quoteRequestId,
           clientEmail: clientEmail || "",
@@ -197,8 +193,7 @@ const generateQuote = async (req, res, next) => {
           timeEstimate: timeEstimateToUse,
         };
 
-        console.log('📝 Données envoyées pour création Quote:', {
-          url: `${bddServiceUrl}/quotes`,
+        console.log('📝 Données envoyées pour création Quote via bddAPI:', {
           quoteRequestId: quoteCreationData.quoteRequestId,
           clientEmail: quoteCreationData.clientEmail,
           clientName: quoteCreationData.clientName,
@@ -207,8 +202,8 @@ const generateQuote = async (req, res, next) => {
           timeEstimate: quoteCreationData.timeEstimate
         });
 
-        const finalQuoteResponse = await axios.post(
-          `${bddServiceUrl}/quotes`,
+        const finalQuoteResponse = await bddAPI.post(
+          `/quotes`,
           quoteCreationData
         );
         console.log("✅ Quote créé avec succès - ID:", finalQuoteResponse.data.id);

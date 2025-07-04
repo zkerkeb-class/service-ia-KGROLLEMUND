@@ -1,7 +1,8 @@
 const OpenAI = require('openai');
 const fs = require('fs');
 const path = require('path');
-
+const dotenv = require('dotenv');
+dotenv.config();
 // Initialisation du client OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY

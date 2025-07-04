@@ -1,7 +1,7 @@
 const express = require('express');
 const { generateQuote } = require('../controllers/quoteController');
 const { generateQuotePDF, generateQuoteHTML } = require('../services/pdfService');
-const { getUserById } = require('../services/databaseService');
+const { getUserById, bddAPI } = require('../services/databaseService');
 const { logPdfDebug } = require('../services/pdfLogger');
 
 const router = express.Router();
@@ -48,18 +48,15 @@ router.get('/quotes/pdf/:id', async (req, res) => {
     });
     
     // Récupérer les données du devis depuis la base de données
-    const bddServiceUrl = process.env.BDD_SERVICE_URL || 'http://localhost:3004';
-    const axios = require('axios');
-    
     let quoteData = null;
     let isFinalized = false;
     
     // D'abord essayer de récupérer comme devis finalisé
     try {
-      const finalQuoteUrl = `${bddServiceUrl}/quotes/${id}`;
+      const finalQuoteUrl = `/quotes/${id}`;
       logPdfDebug('TRYING-FINAL-QUOTE', { url: finalQuoteUrl });
       
-      const finalQuoteResponse = await axios.get(finalQuoteUrl);
+      const finalQuoteResponse = await bddAPI.get(finalQuoteUrl);
       quoteData = finalQuoteResponse.data;
       isFinalized = true;
       
@@ -79,10 +76,10 @@ router.get('/quotes/pdf/:id', async (req, res) => {
       
       // Si pas trouvé, essayer comme demande de devis
       try {
-        const quoteRequestUrl = `${bddServiceUrl}/quote-requests/${id}`;
+        const quoteRequestUrl = `/quote-requests/${id}`;
         logPdfDebug('TRYING-QUOTE-REQUEST', { url: quoteRequestUrl });
         
-        const quoteRequestResponse = await axios.get(quoteRequestUrl);
+        const quoteRequestResponse = await bddAPI.get(quoteRequestUrl);
         quoteData = quoteRequestResponse.data;
         isFinalized = false;
         
@@ -180,10 +177,7 @@ router.put('/:id/tasks', async (req, res) => {
     const { tasksEstimation, totalEstimate, timeEstimate } = req.body;
     
     // Mettre à jour les tâches dans la base de données
-    const bddServiceUrl = process.env.BDD_SERVICE_URL || 'http://localhost:3004';
-    const axios = require('axios');
-    
-    const response = await axios.put(`${bddServiceUrl}/quote-requests/${id}`, {
+    const response = await bddAPI.put(`/quote-requests/${id}`, {
       tasksEstimation,
       totalEstimate,
       timeEstimate

@@ -1,14 +1,14 @@
 const axios = require('axios');
-require('dotenv').config();
+const dotenv = require('dotenv');
+dotenv.config();
 
-
-
-// Configuration de l'URL du service BDD
-const BDD_SERVICE_URL = process.env.BDD_SERVICE_URL || 'http://localhost:3004';
+// L'URL du service de base de données doit être fournie par une variable d'environnement
+console.log('BDD_SERVICE_URL here1:', process.env.BDD_SERVICE_URL);
+const BDD_SERVICE_URL = process.env.BDD_SERVICE_URL;
 
 // Instance axios configurée pour le service BDD
 const bddAPI = axios.create({
-  baseURL: BDD_SERVICE_URL,
+  baseURL: `${BDD_SERVICE_URL}/api`,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -71,5 +71,6 @@ module.exports = {
   saveAnalysis,
   getAnalysesByUser,
   saveQuote,
-  getUserById
+  getUserById,
+  bddAPI
 }; 
