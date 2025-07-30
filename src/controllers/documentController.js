@@ -110,7 +110,7 @@ const analyzeDocument = async (req, res, next) => {
           // On continue même si la sauvegarde échoue
         }
       } else {
-        console.warn("⚠️ Pas d'userId fourni, aucune sauvegarde en BDD");
+        console.log("-> Pas de UserId, la demande de devis n'est pas sauvegardée");
       }
 
       // Supprimer le fichier après l'analyse
